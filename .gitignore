@@ -1,0 +1,6 @@
+output.xlsx
+**dist
+**build
+*.png
+log_app.txt
+token_movidesk.py
