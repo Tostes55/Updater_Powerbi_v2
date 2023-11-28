@@ -13,6 +13,7 @@ from tkcalendar import *
 
 
 
+
 locale.setlocale(locale.LC_TIME, 'pt_BR.utf8')
 
 # Configura o logging
@@ -179,25 +180,29 @@ def update_excel(data):
         update_excel(data)
 
 # Cria uma janela raiz
-root = customtkinter.Ctk()
-root.title('Updater Power BI')
-root.geometry("400x400")
-root.configure(bg='light sea green')
+janela = customtkinter.CTk()
+janela.title('Updater Power BI')
+janela.geometry("400x400")
+janela.maxsize(width=400, height=400)
+janela.minsize(width=400, height=400)
+janela.resizable(width=False, height=False)
+janela._set_appearance_mode("Dark")
 
-start_date_label = customtkinter.ctkLabel(root, text='Updater Power BI', bg='light sea green', font=("Arial",18))
-start_date_label.place(x=110, y=100)
+frame1= customtkinter.CTkFrame(master=janela,width=400, height=400)
+start_date_label = customtkinter.CTkLabel(janela, text='Updater Power BI', font=("Arial Black",22))
+start_date_label.pack(padx=50, pady=40)
 
-start_date_label = customtkinter.ctkLabel(root, text='Data Inicial:', bg='light sea green')
-start_date_label.place(x=100, y=160)
+start_date_label = customtkinter.CTkLabel(janela, text='Data Inicial:', font=("Arial",15))
+start_date_label.pack(padx=50, pady=5)
 
-start_date_entry = DateEntry(root,date_pattern='dd/mm/yyyy')
-start_date_entry.place(x=180, y=160)
+start_date_entry = DateEntry(janela,date_pattern='dd/mm/yyyy')
+start_date_entry.pack(padx=50, pady=1)
 
-end_date_label = customtkinter.ctkLabel(root, text='Data Final:', bg='light sea green')
-end_date_label.place(x=100, y=190)
+end_date_label = customtkinter.CTkLabel(janela, text='Data Final:', font=("Arial",15))
+end_date_label.pack(padx=50, pady=5)
 
-end_date_entry = DateEntry(root,date_pattern='dd/mm/yyyy') 
-end_date_entry.place(x=180, y=190)
+end_date_entry = DateEntry(janela,date_pattern='dd/mm/yyyy') 
+end_date_entry.pack(padx=50, pady=1)
 
 
 
@@ -218,7 +223,7 @@ def update_data():
 
     ambiente.update_data()
 
-update_button = customtkinter.ctkButton(root, text='Atualizar', command=update_data)
-update_button.place(x=170, y=250)
+update_button = customtkinter.CTkButton(janela, text='Atualizar', command=update_data)
+update_button.pack(padx=50, pady=20)
 
-root.mainloop()
+janela.mainloop()
