@@ -10,6 +10,7 @@ from token_movidesk import token_api
 from tkinter import *
 from tkinter import messagebox
 from tkcalendar import *
+from datetime import datetime
 
 
 
@@ -43,57 +44,76 @@ class Ambiente:
         logging.info(f'Making GET request to URL: {full_url}')
 
         try:
+            progressbar.start()
             response = requests.get(full_url)
             response.raise_for_status()  # Lança uma exceção para códigos de status de erro
             data = response.json()
+            print(f"Realizado Request")
             return data
         except requests.exceptions.RequestException as e:
             logging.error(f'Erro na solicitação HTTP: {e}')
             return None
 
-    def save_as_xlsx(self, data, filename='output.xlsx'): 
-        if data is not None:
+    def save_as_xlsx(self, data):
+        if data is not None and isinstance(data, list):
             try:
-                if isinstance(data, list) and len(data) > 0:
+                filtered_data = []
+                for item in data:
+                    filtered_item = {
+                        "resolvedIn": item.get("resolvedIn", ""),
+                        "origin": item.get("origin", ""),
+                        "status": item.get("status", ""),
+                        "serviceThirdLevel": item.get("serviceThirdLevel", ""),
+                        "serviceSecondLevel": item.get("serviceSecondLevel", ""),
+                        "serviceFirstLevel": item.get("serviceFirstLevel", ""),
+                        "ownerTeam": item.get("ownerTeam", ""),
+                        "id": item.get("id", ""),
+                        "businessNameOwner": item.get("owner", {}).get("businessName", ""),
+                        "business_company": item.get("clients")[0].get("organization", {}).get("businessName", ""),
+                        "businessNameClient": item.get("clients", [{}])[0].get("businessName", "")
+                    }
+                    filtered_data.append(filtered_item)
 
-                    filtered_data = []
-                    for item in data:
-                        if isinstance(item, dict):  # Verifica se o item é um dicionário
-                            filtered_item = {
-                                "resolvedIn": item.get("resolvedIn", ""),
-                                "origin": item.get("origin", ""),
-                                "status": item.get("status", ""),
-                                "serviceThirdLevel": item.get("serviceThirdLevel", ""),
-                                "serviceSecondLevel": item.get("serviceSecondLevel", ""),
-                                "serviceFirstLevel": item.get("serviceFirstLevel", ""),
-                                "ownerTeam": item.get("ownerTeam", ""),
-                                "id": item.get("id", ""),
-                                "businessNameOwner": item.get("owner", {}).get("businessName", ""),
-                                "businessNameClient": item.get("clients", [{}])[0].get("businessName", "")
-                            }
-                            filtered_data.append(filtered_item)
-                        else:
-                            logging.warning(f'Item encontrado em data não é um dicionário: {item}')
+                if filtered_data:
+                    output_file = 'output.xlsx'
+                    backup_folder = 'backup'
+                    today_folder = os.path.join(backup_folder, datetime.now().strftime('%Y-%m-%d'))
 
-                    if filtered_data:  # Verifica se há dados válidos para salvar
-                        # Supondo que cada item na lista seja um dicionário
-                        df = pd.DataFrame(filtered_data)  
-                        
-                        # Salvar como XLSX
-                        df.to_excel(filename, index=False)
-                        logging.info(f'Data saved to {filename}')
-                        return True  # Indica que a operação de salvamento foi bem-sucedida
+                    if not os.path.exists(today_folder):
+                        os.makedirs(today_folder)
+                        logging.info(f"Pasta '{today_folder}' criada com sucesso para o backup de hoje.")
+
+                    backup_path = os.path.join(today_folder, f"{output_file.split('.')[0]}_backup.xlsx")
+                    shutil.copy2(output_file, backup_path)
+                    logging.info(f"Backup do arquivo '{output_file}' criado em '{backup_path}'.")
+
+                    df_existing = pd.read_excel(output_file)
+
+                    df_to_append = []
+                    for item in filtered_data:
+                        if item['id'] not in df_existing['id'].tolist():
+                            df_to_append.append(item)
+
+                    if df_to_append:
+                        df_updated = pd.concat([df_existing, pd.DataFrame(df_to_append)], ignore_index=True)
+                        df_updated.to_excel(output_file, index=False)
+                        logging.info(f'Dados salvos em {output_file}')
+                        return True
                     else:
-                        logging.error('Nenhum dado válido para salvar')
+                        logging.warning('Nenhum novo dado para adicionar.')
+                        return False
                 else:
-                    logging.error('Nenhum dado válido para salvar')
+                    logging.warning('Nenhum dado filtrado encontrado.')
+                    return False
             except Exception as ex:
-                logging.error(f'Error saving data to {filename}: {ex}')
+                logging.error(f'Erro ao processar e salvar dados: {ex}')
+                return False
         else:
-            logging.error('Nenhum dado para salvar')
-        return False  # Indica que não houve dados para salvar ou ocorreu um erro
+            logging.error('Nenhum dado válido recebido.')
+            return False
 
     def update_data(self):
+        progressbar.start()
         selected_date_entry = start_date_entry.get_date()
         formatted_date_entry = selected_date_entry.strftime("%Y-%m-%dT%H:%M:%S.00z")
 
@@ -107,21 +127,24 @@ class Ambiente:
 
         data = self.get_data()
         if data:
-            messagebox.showinfo("Sucesso", "Processo finalizado com sucesso!")
+            messagebox.showinfo("Sucesso", "Dados recebidos da API !")
             print(f"Os dados obtidos foram: {data}")
 
             # Chama o método save_as_xlsx para salvar os dados
             saved_successfully = self.save_as_xlsx(data)
             if saved_successfully:
+                progressbar.stop()
                 messagebox.showinfo("Sucesso", "Dados salvos com sucesso!")
             else:
+                progressbar.stop()
                 messagebox.showerror("Erro", "Falha ao salvar os dados. Verifique o log para mais informações.")
         else:
+            progressbar.stop()
             messagebox.showerror("Erro", "Falha ao obter os dados. Verifique o log para mais informações.")
 
 def update_excel(data):
     try:
-        setup_logger()
+        
         # Caminho do arquivo original e da pasta de backup
         output_file = 'output.xlsx'
         backup_folder = 'backup'
@@ -178,34 +201,40 @@ def update_excel(data):
 
 # Chamada da função para atualizar o arquivo XLSX com os novos dados
         update_excel(data)
+        progressbar.stop()
 
 # Cria uma janela raiz
 janela = customtkinter.CTk()
 janela.title('Updater Power BI')
-janela.geometry("400x400")
-janela.maxsize(width=400, height=400)
-janela.minsize(width=400, height=400)
+janela.geometry("450x450")
+janela.maxsize(width=450, height=450)
+janela.minsize(width=450, height=450)
 janela.resizable(width=False, height=False)
 janela._set_appearance_mode("Dark")
 
-frame1= customtkinter.CTkFrame(master=janela,width=400, height=400)
-start_date_label = customtkinter.CTkLabel(janela, text='Updater Power BI', font=("Arial Black",22))
-start_date_label.pack(padx=50, pady=40)
+
+title_label = customtkinter.CTkLabel(janela, text='Updater Power BI', font=("Arial Black",22))
+title_label.place(x=120, y=60)
+
 
 start_date_label = customtkinter.CTkLabel(janela, text='Data Inicial:', font=("Arial",15))
-start_date_label.pack(padx=50, pady=5)
+start_date_label.place(x=120, y=160)
 
 start_date_entry = DateEntry(janela,date_pattern='dd/mm/yyyy')
-start_date_entry.pack(padx=50, pady=1)
+start_date_entry.place(x=220, y=165)
 
 end_date_label = customtkinter.CTkLabel(janela, text='Data Final:', font=("Arial",15))
-end_date_label.pack(padx=50, pady=5)
+end_date_label.place(x=120, y=200)
 
 end_date_entry = DateEntry(janela,date_pattern='dd/mm/yyyy') 
-end_date_entry.pack(padx=50, pady=1)
+end_date_entry.place(x=220, y=205)
 
-
-
+progressbar=customtkinter.CTkProgressBar(janela, orientation="horizontal")
+progressbar.place(x=120, y=260)
+progressbar.set(0)
+mode="indeterminate",
+determinate_speed=5,
+indeterminate_speed=.5,
 
 ambiente = Ambiente()
 
@@ -224,6 +253,8 @@ def update_data():
     ambiente.update_data()
 
 update_button = customtkinter.CTkButton(janela, text='Atualizar', command=update_data)
-update_button.pack(padx=50, pady=20)
+#update_button.pack(padx=50, pady=20)
+#update_button.grid(row=3, column=0, columnspan=2, pady=30)
+update_button.place(x=160, y=300)
 
 janela.mainloop()
