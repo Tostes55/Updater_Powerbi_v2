@@ -60,17 +60,17 @@ class Ambiente:
                 filtered_data = []
                 for item in data:
                     filtered_item = {
-                        "resolvedIn": item.get("resolvedIn", ""),
-                        "origin": item.get("origin", ""),
-                        "status": item.get("status", ""),
-                        "serviceThirdLevel": item.get("serviceThirdLevel", ""),
-                        "serviceSecondLevel": item.get("serviceSecondLevel", ""),
-                        "serviceFirstLevel": item.get("serviceFirstLevel", ""),
-                        "ownerTeam": item.get("ownerTeam", ""),
-                        "id": item.get("id", ""),
-                        "businessNameOwner": item.get("owner", {}).get("businessName", ""),
-                        "business_company": item.get("clients")[0].get("organization", {}).get("businessName", ""),
-                        "businessNameClient": item.get("clients", [{}])[0].get("businessName", "")
+                        "resolvedIn": item.get("resolvedIn", "") if item.get("resolvedIn") else "",
+                        "origin": item.get("origin", "")if item.get ("origin") else "",
+                        "status": item.get("status", "") if item.get("status") else "",
+                        "serviceThirdLevel": item.get("serviceThirdLevel", "") if item.get("serviceThirdLevel") else "",
+                        "serviceSecondLevel": item.get("serviceSecondLevel", "") if item.get("serviceSecondLevel") else "",
+                        "serviceFirstLevel": item.get("serviceFirstLevel", "") if item.get("serviceFirstLevel") else "",
+                        "ownerTeam": item.get("ownerTeam", "") if item.get("ownerTeam") else "",
+                        "id": item.get("id", "")if item.get("id") else "",
+                        "businessNameOwner": item.get("owner", {}).get("businessName", "") if item.get("owner") else "",
+                        "business_company": item.get("clients")[0].get("organization", {}).get("businessName", "") if item.get("clients") and item.get("clients")[0].get("organization") else "",
+                        "businessNameClient": item.get("clients", [{}])[0].get("businessName", "") if item.get("clients") and len(item.get("clients")) > 0 else ""
                     }
                     filtered_data.append(filtered_item)
 
@@ -253,6 +253,7 @@ def update_data():
     ambiente.update_data()
 
 update_button = customtkinter.CTkButton(janela, text='Atualizar', command=update_data)
+
 #update_button.pack(padx=50, pady=20)
 #update_button.grid(row=3, column=0, columnspan=2, pady=30)
 update_button.place(x=160, y=300)
