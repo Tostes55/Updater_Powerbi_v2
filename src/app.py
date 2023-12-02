@@ -6,6 +6,7 @@ import locale
 import pandas as pd
 import os
 import shutil
+import openpyxl
 from token_movidesk import token_api
 from tkinter import *
 from tkinter import messagebox
@@ -79,10 +80,27 @@ class Ambiente:
                     backup_folder = 'backup'
                     today_folder = os.path.join(backup_folder, datetime.now().strftime('%Y-%m-%d'))
 
-                    if not os.path.exists(today_folder):
+                    if not os.path.exists(today_folder) :
                         os.makedirs(today_folder)
                         logging.info(f"Pasta '{today_folder}' criada com sucesso para o backup de hoje.")
+                        
+                    if not os.path.exists(output_file): 
+                        df = pd.DataFrame({
+                                "resolvedIn": [],
+                                "origin" :[],
+                                "status": [],
+                                "serviceThirdLevel": [],
+                                "serviceSecondLevel": [],
+                                "serviceFirstLevel": [],
+                                "ownerTeam": [],
+                                "id": [],
+                                "businessNameOwner": [],
+                                "business_company": [],
+                                "businessNameClient": []
+                            })
+                        df.to_excel(output_file, sheet_name='Relatório', index=False)
 
+                   
                     backup_path = os.path.join(today_folder, f"{output_file.split('.')[0]}_backup.xlsx")
                     shutil.copy2(output_file, backup_path)
                     logging.info(f"Backup do arquivo '{output_file}' criado em '{backup_path}'.")
@@ -91,6 +109,7 @@ class Ambiente:
 
                     df_to_append = []
                     for item in filtered_data:
+                        print(item)
                         if item['id'] not in df_existing['id'].tolist():
                             df_to_append.append(item)
 
@@ -109,7 +128,7 @@ class Ambiente:
                 logging.error(f'Erro ao processar e salvar dados: {ex}')
                 return False
         else:
-            logging.error('Nenhum dado válido recebido.')
+            logging.erro('Nenhum dado válido recebido.')
             return False
 
     def update_data(self):
